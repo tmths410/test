@@ -34,7 +34,6 @@
       .class-slot.selected { background: #d1e7dd; box-shadow: inset 4px 0 #198754, inset -4px 0 #198754; color: #0f5132; }
       
       .free-slot { cursor: default; background: var(--free-bg) !important; color: var(--free-text); font-weight: 600; font-size: 0.95rem; }
-      .club-slot { background: #fff3cd !important; color: #856404; font-weight: 800; border: 1px solid #dee2e6; } 
       
       .fit-text { display: inline-block; width: 100%; text-align: center; line-height: 1.15; font-size: 0.9rem; letter-spacing: -0.3px; }
       .fit-text.long-3 { font-size: 0.8rem; letter-spacing: -0.8px; }
@@ -63,12 +62,10 @@
       .teacher-checkboxes { max-height: 310px; overflow-y: auto; border: 1px solid #dee2e6; padding: 14px; border-radius: 9px; background: #fff; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px 8px; }
       .teacher-checkboxes .form-check { margin-bottom: 0; white-space: nowrap; }
       
-      /* ⭐ 모바일 뷰 최적화 (시간표 가로 스크롤 제거 및 열 너비 대폭 축소) */
       @media (max-width: 576px) { 
         body { padding: 8px 4px; } 
         .card { padding: 12px 6px; }
         
-        /* 테이블이 모바일 화면 크기에 맞춰지도록 최소 너비(750px) 강제 해제 */
         .schedule-table { min-width: 100%; } 
         
         .schedule-table th { min-width: 40px; font-size: 0.75rem; padding: 4px 2px; }
@@ -76,7 +73,6 @@
         .schedule-table th.period-cell, .schedule-table td.period-cell { width: 55px; min-width: 55px; font-size: 0.75rem; }
         .time-text { font-size: 0.55rem; }
         
-        /* 글자 크기는 이전처럼 유지 */
         .fit-text { font-size: 0.75rem; }
         .fit-text.long-3 { font-size: 0.7rem; }
         .fit-text.long-4 { font-size: 0.65rem; }
@@ -284,9 +280,6 @@
           WEEKDAYS.forEach(function (day, dayIdx) {
             let tdStyle = dayIdx > 0 ? 'border-left: 2px solid #dee2e6;' : '';
             
-            if (day.short === '금' && p === 7) {
-              row += `<td class="free-slot club-slot" style="${tdStyle}">동아리</td>`; return;
-            }
             const periodInfo = findPeriod(day.long, p);
             const classText = periodInfo ? teacher.schedule[periodInfo.col] : '';
             if (!classText || !periodInfo) {
@@ -402,7 +395,7 @@
         WEEKDAYS.forEach((day, dayIdx) => {
             day.cols.forEach((col, idx) => {
                 let style = idx === 0 && dayIdx > 0 ? 'border-left: 2px solid #dee2e6;' : '';
-                thead += `<th style="${style}">${idx+1}</th>`;
+                thead += `<th style="${style} min-width: 60px;">${idx+1}</th>`;
             });
         });
         thead += '</tr></thead>';
@@ -427,10 +420,7 @@
                     let isTarget = (isTargetRow && uniqueTargetCols.includes(col));
                     let candidateMatch = swapData.find(s => s.candidateRow === rowId && s.candidateCol === col);
 
-                    if (day.short === '금' && col === 34) { 
-                         cellContent = '<span style="color:#856404; font-size:0.75rem;">동아리</span>';
-                         tdStyle += ' background-color: #fff3cd !important; color: #856404 !important; border: 1px solid #ced4da;';
-                    } else if (isTarget) {
+                    if (isTarget) {
                         let colorIdx = uniqueTargetCols.indexOf(col) % SWAP_COLORS.length;
                         let colors = SWAP_COLORS[colorIdx];
                         tdStyle += ` background-color: ${colors.bg} !important; border: 3px solid ${colors.border} !important; color: #212529 !important; font-weight: bold;`;
