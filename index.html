@@ -6,7 +6,6 @@
     <title>동명공고 교사 시간표 시스템</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-      /* ⭐ 1. 공강 바탕색을 더 연한 회색(#f8f9fa), 텍스트도 부드럽게 조정 */
       :root { --school-blue: #1554a3; --school-blue-light: #eaf2fc; --free-bg: #f8f9fa; --free-text: #adb5bd; }
       
       body { min-height: 100vh; margin: 0; padding: 16px 8px; background: #f6f8fb; font-family: 'Malgun Gothic', sans-serif; color: #212529; }
@@ -20,12 +19,14 @@
       .schedule-wrap { overflow-x: auto; border: 1px solid #dee2e6; border-radius: 10px; background: #fff; }
       .schedule-table { min-width: 750px; margin-bottom: 0; table-layout: fixed; border-collapse: collapse; }
       
-      .schedule-table th, .schedule-table td { text-align: center; vertical-align: middle; padding: 6px; border: 1px solid #ced4da; }
-      .schedule-table th { background: #f8fafc; color: #4d5968; padding: 10px 4px; border-bottom: 2px solid #adb5bd; min-width: 85px; }
+      /* ⭐ 1. 구분선 색상을 부드러운 연회색으로 되돌림 */
+      .schedule-table th, .schedule-table td { text-align: center; vertical-align: middle; padding: 6px; border: 1px solid #dee2e6; }
+      .schedule-table th { background: #f8fafc; color: #4d5968; padding: 10px 4px; border-bottom: 2px solid #dee2e6; min-width: 80px; }
       .schedule-table td { height: 60px; }
       
+      /* ⭐ 1. 교시 열(첫 번째 열) 너비 축소 */
       .schedule-table th.period-cell, .schedule-table td.period-cell {
-        position: sticky; left: 0; z-index: 1; background: #f8fafc; border-right: 2px solid #adb5bd; width: 95px; font-weight: 800; color: #4d5968;
+        position: sticky; left: 0; z-index: 1; background: #f8fafc; border-right: 2px solid #dee2e6; width: 80px; font-weight: 800; color: #4d5968;
       }
       .schedule-table thead th.period-cell { z-index: 2; }
       .time-text { font-size: 0.68rem; color: #87929d; font-weight: normal; }
@@ -35,13 +36,13 @@
       .class-slot.selected { background: #d1e7dd; box-shadow: inset 4px 0 #198754, inset -4px 0 #198754; color: #0f5132; }
       
       .free-slot { cursor: default; background: var(--free-bg) !important; color: var(--free-text); font-weight: 600; font-size: 0.95rem; }
-      .club-slot { background: #fff3cd !important; color: #856404; font-weight: 800; border: 1px solid #ced4da; } 
+      .club-slot { background: #fff3cd !important; color: #856404; font-weight: 800; border: 1px solid #dee2e6; } 
       
-      /* 줄바꿈이 적용되어 자연스럽게 스택되도록 nowrap 해제 */
-      .fit-text { display: inline-block; width: 100%; text-align: center; line-height: 1.2; }
-      .fit-text.long-4 { letter-spacing: -0.5px; transform: scaleX(0.95); transform-origin: center; }
-      .fit-text.long-5 { letter-spacing: -1px; transform: scaleX(0.85); transform-origin: center; }
-      .fit-text.long-7 { letter-spacing: -1.5px; transform: scaleX(0.75); transform-origin: center; }
+      /* ⭐ 3. 글자 수에 따른 자간, 장평 세밀 조정 */
+      .fit-text { display: inline-block; white-space: nowrap; width: 100%; text-align: center; line-height: 1.2; }
+      .fit-text.long-3 { letter-spacing: -1px; transform: scaleX(0.85); transform-origin: center; }
+      .fit-text.long-4 { letter-spacing: -1.5px; transform: scaleX(0.75); transform-origin: center; }
+      .fit-text.long-5 { letter-spacing: -2px; transform: scaleX(0.65); transform-origin: center; }
 
       .empty-guide { border: 1px dashed #b9c4d0; border-radius: 10px; padding: 38px 16px; text-align: center; color: #6c757d; background: #fbfcfd; }
       .selected-info { min-height: 24px; color: #0f5132; font-size: .92rem; font-weight: 700; }
@@ -49,17 +50,18 @@
       @keyframes spin { to { transform: rotate(360deg); } }
       .result-box { display: none; margin-top: 20px; }
       
-      .result-table-wrap { overflow-x: auto; border: 1px solid #cdd4dc; border-radius: 10px; background: #fff; margin-top: 15px; }
-      .result-table { min-width: 1000px; margin-bottom: 0; table-layout: fixed; border-collapse: collapse; }
-      .result-table th, .result-table td { text-align: center; vertical-align: middle; border: 1px solid #ced4da; padding: 6px 2px; }
-      .result-table thead th { background: #f8fafc; color: #4d5968; font-size: 0.85rem; border-bottom: 2px solid #adb5bd; }
+      .result-table-wrap { overflow-x: auto; border: 1px solid #dee2e6; border-radius: 10px; background: #fff; margin-top: 15px; }
+      .result-table { min-width: 900px; margin-bottom: 0; table-layout: fixed; border-collapse: collapse; }
+      .result-table th, .result-table td { text-align: center; vertical-align: middle; border: 1px solid #dee2e6; padding: 4px 2px; }
+      .result-table thead th { background: #f8fafc; color: #4d5968; font-size: 0.85rem; border-bottom: 2px solid #dee2e6; }
       
-      .sticky-col { position: sticky; left: 0; background: #fff; z-index: 2; border-right: 2px solid #adb5bd !important; font-weight: bold; width: 70px; }
+      .sticky-col { position: sticky; left: 0; background: #fff; z-index: 2; border-right: 2px solid #dee2e6 !important; font-weight: bold; width: 70px; }
       .result-table thead th.sticky-col { background: #f8fafc; z-index: 3; }
       
-      /* ⭐ 4. 타겟 교사 행 전체 강조 효과 (배경: 연회색, 글자: 하늘색) */
-      .target-row td { background-color: #f1f3f5; color: #0d6efd; font-weight: bold; }
-      .target-row .sticky-col { background-color: #e9ecef; color: #0d6efd; }
+      /* ⭐ 2. 타겟 교사 행: 연회색 배경, 일반 회색 텍스트(파란색 제거) */
+      .target-row { background-color: #f8f9fa; }
+      .target-row td { color: #495057; font-weight: normal; }
+      .target-row .sticky-col { background-color: #f1f3f5; color: #212529; font-weight: bold; }
       
       .meeting-free { background-color: #cfe2f3 !important; border: 2px solid #0b5394 !important; color: #0b5394; font-weight: bold; }
 
@@ -69,7 +71,6 @@
       @media (max-width: 576px) { 
         body { padding: 10px 4px; } 
         .card { padding: 12px 8px; }
-        .schedule-table th.period-cell, .schedule-table td.period-cell { width: 90px; }
       }
     </style>
   </head>
@@ -77,7 +78,6 @@
     <main class="app-container">
       <h1 class="system-title text-center mb-4 fw-bold">동명공고 교사 시간표 시스템</h1>
       
-      <!-- ⭐ 2. 새창 열기 버튼을 맨 위로 위치 이동 및 텍스트 변경 -->
       <div class="d-flex justify-content-end mb-3">
         <button class="btn btn-outline-primary btn-sm fw-bold" type="button" onclick="openSheet()">주간시간표 구글 시트(새창)</button>
       </div>
@@ -94,10 +94,11 @@
             <label for="swapTeacher" class="form-label fw-bold mb-1">교사 선택</label>
             <div class="d-flex gap-2 mb-3">
               <select id="swapTeacher" class="form-select"></select>
+              <!-- ⭐ 4. 버튼 사이즈 및 폰트 축소 적용 -->
               <div class="btn-group" role="group" style="flex-shrink: 0;">
-                <button type="button" class="btn btn-outline-secondary" onclick="changeWeek(-1)">◀ 이전주</button>
-                <button type="button" class="btn btn-outline-secondary" onclick="changeWeek(0)">이번주</button>
-                <button type="button" class="btn btn-outline-secondary" onclick="changeWeek(1)">다음주 ▶</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1" style="font-size: 0.75rem;" onclick="changeWeek(-1)">◀ 이전주</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1" style="font-size: 0.75rem;" onclick="changeWeek(0)">이번주</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-1" style="font-size: 0.75rem;" onclick="changeWeek(1)">다음주 ▶</button>
               </div>
             </div>
             
@@ -149,12 +150,13 @@
       window.selectedPeriodCols = [];
       window.weekOffset = 0; 
 
+      // ⭐ 2. 선택 수업 팔레트 조정 (1순위를 하늘색으로 배치)
       const SWAP_COLORS = [
-        { bg: '#ffe599', border: '#ff9900' }, 
-        { bg: '#b6d7a8', border: '#38761d' }, 
-        { bg: '#c9daf8', border: '#1155cc' }, 
-        { bg: '#e4d7f5', border: '#674ea7' }, 
-        { bg: '#f4cccc', border: '#cc0000' }  
+        { bg: '#cfe2f3', border: '#0b5394' }, // 1. 하늘색 (최우선 배치)
+        { bg: '#ffe599', border: '#ff9900' }, // 2. 노랑
+        { bg: '#b6d7a8', border: '#38761d' }, // 3. 초록
+        { bg: '#e4d7f5', border: '#674ea7' }, // 4. 보라
+        { bg: '#f4cccc', border: '#cc0000' }  // 5. 분홍
       ];
 
       const WEEKDAYS = [
@@ -214,16 +216,16 @@
         renderSelectedTeacherSchedule(); 
       }
 
-      // ⭐ 3. 공백을 강제로 <br>로 치환하여 학반과 과목이 상하(세로)로 배치되도록 수정
+      // ⭐ 3. 글자 길이에 따라 폰트 장평/자간 동적 축소 로직 추가
       function formatFitText(text) {
         if (!text) return '';
         let parts = text.trim().split(/\s+/);
         let lines = parts.map(part => {
           let safe = escapeHtml(part);
           let len = part.length; 
-          if (len >= 7) return `<span class="fit-text long-7">${safe}</span>`;
           if (len >= 5) return `<span class="fit-text long-5">${safe}</span>`;
           if (len >= 4) return `<span class="fit-text long-4">${safe}</span>`;
+          if (len >= 3) return `<span class="fit-text long-3">${safe}</span>`;
           return `<span class="fit-text">${safe}</span>`;
         });
         return lines.join('<br>');
@@ -250,7 +252,7 @@
         
         let thead = '<thead><tr><th class="period-cell">교시</th>';
         WEEKDAYS.forEach(function (day, idx) {
-          let style = idx > 0 ? 'border-left: 2px solid #adb5bd;' : '';
+          let style = idx > 0 ? 'border-left: 2px solid #dee2e6;' : '';
           thead += `<th style="${style}">${day.short}요일<br><span class="time-text">${formatMonthDay(weekDates[idx])}</span></th>`;
         });
         thead += '</tr></thead>';
@@ -259,7 +261,7 @@
         for (let p = 1; p <= 7; p++) {
           let row = '<tr><td class="period-cell">' + p + '교시<br><span class="time-text">' + PERIOD_TIMES[p - 1] + '</span></td>';
           WEEKDAYS.forEach(function (day, dayIdx) {
-            let tdStyle = dayIdx > 0 ? 'border-left: 2px solid #adb5bd;' : '';
+            let tdStyle = dayIdx > 0 ? 'border-left: 2px solid #dee2e6;' : '';
             
             if (day.short === '금' && p === 7) {
               row += `<td class="free-slot club-slot" style="${tdStyle}">동아리</td>`; return;
@@ -347,14 +349,15 @@
       function renderSwapResultTable(targetRow, candidateRows, swapData) {
         let thead = '<thead><tr><th class="sticky-col" rowspan="2">교사명</th>';
         WEEKDAYS.forEach((day, idx) => { 
-          let style = idx > 0 ? 'border-left: 2px solid #adb5bd;' : '';
+          let style = idx > 0 ? 'border-left: 2px solid #dee2e6;' : '';
           thead += `<th colspan="${day.cols.length}" style="${style}">${day.short}요일</th>`; 
         });
         thead += '</tr><tr>';
         WEEKDAYS.forEach((day, dayIdx) => {
             day.cols.forEach((col, idx) => {
-                let style = idx === 0 && dayIdx > 0 ? 'border-left: 2px solid #adb5bd;' : '';
-                thead += `<th style="${style} width: 100px;">${idx+1}</th>`;
+                let style = idx === 0 && dayIdx > 0 ? 'border-left: 2px solid #dee2e6;' : '';
+                // ⭐ 3. 결과표 열 너비를 한글 2자 분량(60px)에 맞춤 설정
+                thead += `<th style="${style} width: 60px;">${idx+1}</th>`;
             });
         });
         thead += '</tr></thead>';
@@ -366,7 +369,6 @@
         allRows.forEach(rowId => {
             let teacher = window.appData.teachers.find(t => t.row === rowId);
             
-            // ⭐ 4. 타겟 교사 행 전체에 강조 클래스 부여
             let isTargetRow = (rowId === targetRow); 
             let rowClass = isTargetRow ? 'target-row' : '';
             let tr = `<tr class="${rowClass}"><td class="sticky-col">${escapeHtml(teacher.name)}</td>`;
@@ -374,7 +376,7 @@
             WEEKDAYS.forEach((day, dayIdx) => {
                 day.cols.forEach((col, idx) => {
                     let classText = teacher.schedule[col] || '';
-                    let tdStyle = idx === 0 && dayIdx > 0 ? 'border-left: 2px solid #adb5bd;' : '';
+                    let tdStyle = idx === 0 && dayIdx > 0 ? 'border-left: 2px solid #dee2e6;' : '';
                     let cellContent = classText ? formatFitText(classText) : '';
                     
                     let isTarget = (isTargetRow && uniqueTargetCols.includes(col));
@@ -402,9 +404,9 @@
 
         return `<div class="result-table-wrap"><table class="table result-table">${thead}${tbody}</table></div>
                 <div class="mt-2 small text-muted d-flex flex-wrap gap-3">
-                    <span><span style="display:inline-block; width:14px; height:14px; background:#e9ecef; border:3px solid #6c757d; margin-right:4px; vertical-align:middle;"></span>교체 대상 (두꺼운 테두리)</span>
-                    <span><span style="display:inline-block; width:14px; height:14px; background:#e9ecef; border:1px solid #6c757d; margin-right:4px; vertical-align:middle;"></span>교체 가능 (일반 테두리)</span>
-                    <span>※ 여러 수업 선택 시 각각 다른 색상 그룹으로 표시됩니다.</span>
+                    <span><span style="display:inline-block; width:14px; height:14px; background:#cfe2f3; border:3px solid #0b5394; margin-right:4px; vertical-align:middle;"></span>교체 대상 (두꺼운 테두리)</span>
+                    <span><span style="display:inline-block; width:14px; height:14px; background:#cfe2f3; border:1px solid #0b5394; margin-right:4px; vertical-align:middle;"></span>교체 가능 (일반 테두리)</span>
+                    <span>※ 여러 수업 선택 시 각각 다른 색상 그룹으로 자동 배정됩니다.</span>
                 </div>`;
       }
 
@@ -434,15 +436,15 @@
       function renderMeetingResultTable(selectedRows, commonFreeCols) {
         let thead = '<thead><tr><th class="sticky-col" rowspan="2">교사명</th>';
         WEEKDAYS.forEach((day, idx) => { 
-          let style = idx > 0 ? 'border-left: 2px solid #adb5bd;' : '';
+          let style = idx > 0 ? 'border-left: 2px solid #dee2e6;' : '';
           thead += `<th colspan="${day.cols.length}" style="${style}">${day.short}요일</th>`; 
         });
         thead += '</tr><tr>';
         WEEKDAYS.forEach((day, dayIdx) => {
             day.cols.forEach((col, idx) => {
-                let style = idx === 0 && dayIdx > 0 ? 'border-left: 2px solid #adb5bd;' : '';
+                let style = idx === 0 && dayIdx > 0 ? 'border-left: 2px solid #dee2e6;' : '';
                 if(commonFreeCols.includes(col)) style += ' background-color: #cfe2f3; color: #0b5394;';
-                thead += `<th style="${style} width: 80px;">${idx+1}</th>`;
+                thead += `<th style="${style} width: 60px;">${idx+1}</th>`;
             });
         });
         thead += '</tr></thead>';
@@ -455,7 +457,7 @@
                 day.cols.forEach((col, idx) => {
                     let classText = teacher.schedule[col] || '';
                     let isCommon = commonFreeCols.includes(col);
-                    let tdStyle = idx === 0 && dayIdx > 0 ? 'border-left: 2px solid #adb5bd;' : '';
+                    let tdStyle = idx === 0 && dayIdx > 0 ? 'border-left: 2px solid #dee2e6;' : '';
                     let tdClass = '';
                     let cellContent = classText ? formatFitText(classText) : '';
                     
