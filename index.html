@@ -6,9 +6,9 @@
     <title>동명공고 교사 시간표 시스템</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-      :root { --school-blue: #1554a3; --school-blue-light: #eaf2fc; --free-bg: #e9ecef; --free-text: #6c757d; }
+      /* ⭐ 1. 공강 바탕색을 더 연한 회색(#f8f9fa), 텍스트도 부드럽게 조정 */
+      :root { --school-blue: #1554a3; --school-blue-light: #eaf2fc; --free-bg: #f8f9fa; --free-text: #adb5bd; }
       
-      /* ⭐ 2. 모바일 좌우 여백 최적화를 위해 기본 패딩 축소 */
       body { min-height: 100vh; margin: 0; padding: 16px 8px; background: #f6f8fb; font-family: 'Malgun Gothic', sans-serif; color: #212529; }
       .app-container { max-width: 960px; margin: 0 auto; }
       .system-title { color: var(--school-blue); font-size: clamp(1.2rem, 3vw, 1.75rem); }
@@ -20,7 +20,6 @@
       .schedule-wrap { overflow-x: auto; border: 1px solid #dee2e6; border-radius: 10px; background: #fff; }
       .schedule-table { min-width: 750px; margin-bottom: 0; table-layout: fixed; border-collapse: collapse; }
       
-      /* ⭐ 1. 요일/교시 구분선 명확하게 회색 테두리 적용 */
       .schedule-table th, .schedule-table td { text-align: center; vertical-align: middle; padding: 6px; border: 1px solid #ced4da; }
       .schedule-table th { background: #f8fafc; color: #4d5968; padding: 10px 4px; border-bottom: 2px solid #adb5bd; min-width: 85px; }
       .schedule-table td { height: 60px; }
@@ -38,7 +37,8 @@
       .free-slot { cursor: default; background: var(--free-bg) !important; color: var(--free-text); font-weight: 600; font-size: 0.95rem; }
       .club-slot { background: #fff3cd !important; color: #856404; font-weight: 800; border: 1px solid #ced4da; } 
       
-      .fit-text { display: inline-block; white-space: nowrap; width: 100%; text-align: center; }
+      /* 줄바꿈이 적용되어 자연스럽게 스택되도록 nowrap 해제 */
+      .fit-text { display: inline-block; width: 100%; text-align: center; line-height: 1.2; }
       .fit-text.long-4 { letter-spacing: -0.5px; transform: scaleX(0.95); transform-origin: center; }
       .fit-text.long-5 { letter-spacing: -1px; transform: scaleX(0.85); transform-origin: center; }
       .fit-text.long-7 { letter-spacing: -1.5px; transform: scaleX(0.75); transform-origin: center; }
@@ -49,18 +49,16 @@
       @keyframes spin { to { transform: rotate(360deg); } }
       .result-box { display: none; margin-top: 20px; }
       
-      /* ⭐ 결과표 스타일 조정 */
       .result-table-wrap { overflow-x: auto; border: 1px solid #cdd4dc; border-radius: 10px; background: #fff; margin-top: 15px; }
       .result-table { min-width: 1000px; margin-bottom: 0; table-layout: fixed; border-collapse: collapse; }
       .result-table th, .result-table td { text-align: center; vertical-align: middle; border: 1px solid #ced4da; padding: 6px 2px; }
       .result-table thead th { background: #f8fafc; color: #4d5968; font-size: 0.85rem; border-bottom: 2px solid #adb5bd; }
       
-      /* ⭐ 4. 교사명 열 너비 대폭 축소 (글자에 딱 맞게) */
       .sticky-col { position: sticky; left: 0; background: #fff; z-index: 2; border-right: 2px solid #adb5bd !important; font-weight: bold; width: 70px; }
       .result-table thead th.sticky-col { background: #f8fafc; z-index: 3; }
       
-      /* ⭐ 5. 타겟 교사 행 강조용 스타일 */
-      .target-row { background-color: #f1f3f5; }
+      /* ⭐ 4. 타겟 교사 행 전체 강조 효과 (배경: 연회색, 글자: 하늘색) */
+      .target-row td { background-color: #f1f3f5; color: #0d6efd; font-weight: bold; }
       .target-row .sticky-col { background-color: #e9ecef; color: #0d6efd; }
       
       .meeting-free { background-color: #cfe2f3 !important; border: 2px solid #0b5394 !important; color: #0b5394; font-weight: bold; }
@@ -68,7 +66,6 @@
       .teacher-checkboxes { max-height: 310px; overflow-y: auto; border: 1px solid #dee2e6; padding: 14px; border-radius: 9px; background: #fff; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px 8px; }
       .teacher-checkboxes .form-check { margin-bottom: 0; white-space: nowrap; }
       
-      /* 모바일 전용 극단적 여백 축소 */
       @media (max-width: 576px) { 
         body { padding: 10px 4px; } 
         .card { padding: 12px 8px; }
@@ -80,6 +77,11 @@
     <main class="app-container">
       <h1 class="system-title text-center mb-4 fw-bold">동명공고 교사 시간표 시스템</h1>
       
+      <!-- ⭐ 2. 새창 열기 버튼을 맨 위로 위치 이동 및 텍스트 변경 -->
+      <div class="d-flex justify-content-end mb-3">
+        <button class="btn btn-outline-primary btn-sm fw-bold" type="button" onclick="openSheet()">주간시간표 구글 시트(새창)</button>
+      </div>
+
       <ul class="nav nav-tabs main-tabs mb-3" id="mainTabs" role="tablist">
         <li class="nav-item flex-fill" role="presentation"><button class="nav-link active w-100" id="schedule-main-tab" data-bs-toggle="tab" data-bs-target="#schedulePane" type="button" role="tab" aria-controls="schedulePane" aria-selected="true">교사 시간표</button></li>
         <li class="nav-item flex-fill" role="presentation"><button class="nav-link w-100" id="meeting-main-tab" data-bs-toggle="tab" data-bs-target="#meetingPane" type="button" role="tab" aria-controls="meetingPane" aria-selected="false">회의 시간 찾기</button></li>
@@ -103,10 +105,6 @@
             
             <div id="weeklySchedule" class="d-none">
               <div id="tableContainer"></div>
-              
-              <div class="d-flex justify-content-end mt-2 mb-3">
-                <button class="btn btn-outline-primary btn-sm fw-bold" type="button" onclick="openSheet()">교체 가능 수업 찾기 주간 시간표로 확인(새창)</button>
-              </div>
             </div>
             
             <div class="d-flex gap-2 mt-3">
@@ -216,14 +214,19 @@
         renderSelectedTeacherSchedule(); 
       }
 
+      // ⭐ 3. 공백을 강제로 <br>로 치환하여 학반과 과목이 상하(세로)로 배치되도록 수정
       function formatFitText(text) {
         if (!text) return '';
-        let safe = escapeHtml(text);
-        let len = text.replace(/\s/g, '').length; 
-        if (len >= 7) return `<span class="fit-text long-7">${safe}</span>`;
-        if (len >= 5) return `<span class="fit-text long-5">${safe}</span>`;
-        if (len >= 4) return `<span class="fit-text long-4">${safe}</span>`;
-        return `<span class="fit-text">${safe}</span>`;
+        let parts = text.trim().split(/\s+/);
+        let lines = parts.map(part => {
+          let safe = escapeHtml(part);
+          let len = part.length; 
+          if (len >= 7) return `<span class="fit-text long-7">${safe}</span>`;
+          if (len >= 5) return `<span class="fit-text long-5">${safe}</span>`;
+          if (len >= 4) return `<span class="fit-text long-4">${safe}</span>`;
+          return `<span class="fit-text">${safe}</span>`;
+        });
+        return lines.join('<br>');
       }
 
       function renderSelectedTeacherSchedule() {
@@ -351,7 +354,6 @@
         WEEKDAYS.forEach((day, dayIdx) => {
             day.cols.forEach((col, idx) => {
                 let style = idx === 0 && dayIdx > 0 ? 'border-left: 2px solid #adb5bd;' : '';
-                // ⭐ 3. 결과표 교시 열 너비를 100px로 증가시켜 겹침 방지
                 thead += `<th style="${style} width: 100px;">${idx+1}</th>`;
             });
         });
@@ -364,7 +366,7 @@
         allRows.forEach(rowId => {
             let teacher = window.appData.teachers.find(t => t.row === rowId);
             
-            // ⭐ 5. 교체 하고자 하는 타겟 교사 행 강조
+            // ⭐ 4. 타겟 교사 행 전체에 강조 클래스 부여
             let isTargetRow = (rowId === targetRow); 
             let rowClass = isTargetRow ? 'target-row' : '';
             let tr = `<tr class="${rowClass}"><td class="sticky-col">${escapeHtml(teacher.name)}</td>`;
@@ -380,17 +382,16 @@
 
                     if (day.short === '금' && col === 34) { 
                          cellContent = '<span style="color:#856404; font-size:0.75rem;">동아리</span>';
-                         tdStyle += ' background-color: #fff3cd;';
+                         tdStyle += ' background-color: #fff3cd !important; color: #856404 !important; border: 1px solid #ced4da;';
                     } else if (isTarget) {
                         let colorIdx = uniqueTargetCols.indexOf(col) % SWAP_COLORS.length;
                         let colors = SWAP_COLORS[colorIdx];
-                        tdStyle += ` background-color: ${colors.bg} !important; border: 3px solid ${colors.border} !important; font-weight: bold;`;
+                        tdStyle += ` background-color: ${colors.bg} !important; border: 3px solid ${colors.border} !important; color: #212529 !important; font-weight: bold;`;
                     } else if (candidateMatch) {
                         let colorIdx = uniqueTargetCols.indexOf(candidateMatch.targetCol) % SWAP_COLORS.length;
                         let colors = SWAP_COLORS[colorIdx];
-                        tdStyle += ` background-color: ${colors.bg} !important; border: 1px solid ${colors.border} !important; font-weight: bold;`;
+                        tdStyle += ` background-color: ${colors.bg} !important; border: 1px solid ${colors.border} !important; color: #212529 !important; font-weight: bold;`;
                     }
-                    // ⭐ 3. 공강 시간 점선 표기 삭제 처리 (추가 조건 없이 일반 빈칸으로 둠)
 
                     tr += `<td style="${tdStyle} padding:4px;">${cellContent}</td>`;
                 });
