@@ -61,27 +61,39 @@
 
       .teacher-checkboxes { max-height: 310px; overflow-y: auto; border: 1px solid #dee2e6; padding: 14px; border-radius: 9px; background: #fff; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px 8px; }
       .teacher-checkboxes .form-check { margin-bottom: 0; white-space: nowrap; }
+
+      /* 급식지도 달력 스타일 */
+      .lunch-cal-table { table-layout: fixed; min-width: 500px; margin-bottom: 0; }
+      .lunch-cal-table th { color: #4d5968; font-weight: 700; padding: 8px 4px; font-size: 0.9rem; }
+      .lunch-cal-table td { height: 105px; vertical-align: top; padding: 6px 4px; border: 1px solid #dee2e6; background-color: #fff; }
+      .lunch-cal-table td:nth-child(1) .lunch-date { color: #dc3545; }
+      .lunch-cal-table td:nth-child(7) .lunch-date { color: #0d6efd; }
+      .lunch-date { font-weight: 700; text-align: left; font-size: 0.95rem; color: #495057; }
+      .lunch-teacher { background-color: #ffdf7e; color: #856404; font-weight: bold; border-radius: 6px; padding: 5px 2px; font-size: 0.85rem; word-break: keep-all; line-height: 1.25; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+      
+      /* 오늘 날짜 강조 스타일 */
+      .lunch-today { background-color: #f0f7ff !important; border: 2.5px solid #0d6efd !important; box-shadow: inset 0 0 0 1px #0d6efd; }
       
       @media (max-width: 576px) { 
         body { padding: 8px 4px; } 
         .card { padding: 12px 6px; }
-        
         .schedule-table { min-width: 100%; } 
-        
         .schedule-table th { min-width: 40px; font-size: 0.75rem; padding: 4px 2px; }
         .schedule-table td { padding: 2px; height: 50px; }
         .schedule-table th.period-cell, .schedule-table td.period-cell { width: 55px; min-width: 55px; font-size: 0.75rem; }
         .time-text { font-size: 0.55rem; }
-        
         .fit-text { font-size: 0.75rem; }
         .fit-text.long-3 { font-size: 0.7rem; }
         .fit-text.long-4 { font-size: 0.65rem; }
         .fit-text.long-5 { font-size: 0.55rem; }
-        
         .result-table th { font-size: 0.75rem; padding: 4px 2px; min-width: 50px; }
         .result-table td { padding: 2px; }
         .sticky-col { width: 55px; min-width: 55px; font-size: 0.75rem; }
         .system-title { font-size: 1.1rem; }
+        
+        .lunch-cal-table td { height: 85px; padding: 3px 2px; }
+        .lunch-date { font-size: 0.8rem; }
+        .lunch-teacher { font-size: 0.72rem; padding: 3px 1px; letter-spacing: -0.5px; }
       }
     </style>
   </head>
@@ -94,11 +106,13 @@
       </div>
 
       <ul class="nav nav-tabs main-tabs mb-3" id="mainTabs" role="tablist">
-        <li class="nav-item flex-fill" role="presentation"><button class="nav-link active w-100" id="schedule-main-tab" data-bs-toggle="tab" data-bs-target="#schedulePane" type="button" role="tab" aria-controls="schedulePane" aria-selected="true">교사 시간표</button></li>
-        <li class="nav-item flex-fill" role="presentation"><button class="nav-link w-100" id="meeting-main-tab" data-bs-toggle="tab" data-bs-target="#meetingPane" type="button" role="tab" aria-controls="meetingPane" aria-selected="false">회의 시간 찾기</button></li>
+        <li class="nav-item flex-fill" role="presentation"><button class="nav-link active w-100 px-1 px-md-3" id="schedule-main-tab" data-bs-toggle="tab" data-bs-target="#schedulePane" type="button" role="tab" aria-controls="schedulePane" aria-selected="true" style="font-size: clamp(0.85rem, 2.5vw, 1rem);">🗓️ 교사 시간표</button></li>
+        <li class="nav-item flex-fill" role="presentation"><button class="nav-link w-100 px-1 px-md-3" id="meeting-main-tab" data-bs-toggle="tab" data-bs-target="#meetingPane" type="button" role="tab" aria-controls="meetingPane" aria-selected="false" style="font-size: clamp(0.85rem, 2.5vw, 1rem);">👥 회의 시간</button></li>
+        <li class="nav-item flex-fill" role="presentation"><button class="nav-link w-100 px-1 px-md-3" id="lunch-main-tab" data-bs-toggle="tab" data-bs-target="#lunchPane" type="button" role="tab" aria-controls="lunchPane" aria-selected="false" style="font-size: clamp(0.85rem, 2.5vw, 1rem);">🍽️ 급식 담당</button></li>
       </ul>
 
       <div class="tab-content">
+        <!-- 첫 번째 탭: 교사 시간표 -->
         <section class="tab-pane fade show active" id="schedulePane" role="tabpanel" aria-labelledby="schedule-main-tab" tabindex="0">
           <div class="card"><div class="card-body">
             
@@ -113,10 +127,7 @@
             </div>
             
             <div id="scheduleGuide" class="empty-guide">교사를 선택하면 시간표가 표시됩니다.</div>
-            
-            <div id="weeklySchedule" class="d-none">
-              <div id="tableContainer"></div>
-            </div>
+            <div id="weeklySchedule" class="d-none"><div id="tableContainer"></div></div>
             
             <div class="d-flex gap-2 mt-3">
               <button class="btn btn-success flex-grow-1" type="button" onclick="findSwaps()">교체 가능 수업 찾기</button>
@@ -130,6 +141,7 @@
           </div></div>
         </section>
 
+        <!-- 두 번째 탭: 회의 시간 찾기 -->
         <section class="tab-pane fade" id="meetingPane" role="tabpanel" aria-labelledby="meeting-main-tab" tabindex="0">
           <div class="card"><div class="card-body">
             <h2 class="h5 fw-bold text-primary mb-3">회의 시간 찾기</h2>
@@ -145,6 +157,24 @@
             <div id="result2" class="result-box"></div>
           </div></div>
         </section>
+
+        <!-- 세 번째 탭: 급식지도 담당 달력 -->
+        <section class="tab-pane fade" id="lunchPane" role="tabpanel" aria-labelledby="lunch-main-tab" tabindex="0">
+          <div class="card"><div class="card-body">
+            
+            <!-- 같은 줄 우측 정렬된 메뉴 버튼 배치 -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h3 class="h5 fw-bold mb-0 text-dark" id="lunchMonthLabel"></h3>
+              <div class="btn-group" role="group">
+                <button class="btn btn-outline-secondary btn-sm fw-bold px-2 py-1" type="button" onclick="changeLunchMonth(-1)">◀ 이전달</button>
+                <button class="btn btn-outline-primary btn-sm fw-bold px-2 py-1" type="button" onclick="changeLunchMonth(0)">이번달</button>
+                <button class="btn btn-outline-secondary btn-sm fw-bold px-2 py-1" type="button" onclick="changeLunchMonth(1)">다음달 ▶</button>
+              </div>
+            </div>
+
+            <div id="lunchCalendarContainer" class="table-responsive"></div>
+          </div></div>
+        </section>
       </div>
     </main>
 
@@ -153,12 +183,44 @@
       // =============================================================
       // 필수 설정: Apps Script를 웹 앱으로 배포한 뒤 /exec 주소를 입력하세요.
       // =============================================================
-      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbylK2EedlJA6iL7Q_w48RY4G9wvn4c7CIQmMJbQ51gCe1hVmfvDqPHZSWSNS310rvwNbg/exec';
+      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhUkc7Cwk4ThTEPuxtGqizU8s5woapd3gy8aDEt7ALUOd6CPCz5xK15ccdAvyKbd_log/exec';
 
       window.appData = null;
       window.sheetUrl = '';
       window.selectedPeriodCols = [];
       window.weekOffset = 0; 
+      
+      let currentLunchDate = new Date();
+
+      // 대한민국 공휴일 데이터베이스 (연도별 음력/대체공휴일 포함)
+      const HOLIDAYS = {
+        '2025-01-01': '신정', '2025-01-27': '대체공휴일', '2025-01-28': '설날연휴', '2025-01-29': '설날', '2025-01-30': '설날연휴',
+        '2025-03-01': '삼일절', '2025-03-03': '대체공휴일', '2025-05-05': '어린이날', '2025-05-06': '대체공휴일', '2025-06-06': '현충일',
+        '2025-08-15': '광복절', '2025-10-03': '개천절', '2025-10-05': '추석연휴', '2025-10-06': '추석', '2025-10-07': '추석연휴',
+        '2025-10-08': '대체공휴일', '2025-10-09': '한글날', '2025-12-25': '성탄절',
+
+        '2026-01-01': '신정', '2026-02-16': '설날연휴', '2026-02-17': '설날', '2026-02-18': '설날연휴',
+        '2026-03-01': '삼일절', '2026-03-02': '대체공휴일', '2026-05-05': '어린이날', '2026-05-24': '부처님오신날', '2026-05-25': '대체공휴일',
+        '2026-06-06': '현충일', '2026-08-15': '광복절', '2026-08-17': '대체공휴일', '2026-09-24': '추석연휴', '2026-09-25': '추석',
+        '2026-09-26': '추석연휴', '2026-10-03': '개천절', '2026-10-05': '대체공휴일', '2026-10-09': '한글날', '2026-12-25': '성탄절',
+
+        '2027-01-01': '신정', '2027-02-06': '설날연휴', '2027-02-07': '설날', '2027-02-08': '설날연휴', '2027-02-09': '대체공휴일',
+        '2027-03-01': '삼일절', '2027-05-05': '어린이날', '2027-05-13': '부처님오신날', '2027-06-06': '현충일', '2027-06-07': '대체공휴일',
+        '2027-08-15': '광복절', '2027-08-16': '대체공휴일', '2027-09-14': '추석연휴', '2027-09-15': '추석', '2027-09-16': '추석연휴',
+        '2027-10-03': '개천절', '2027-10-04': '대체공휴일', '2027-10-09': '한글날', '2027-10-11': '대체공휴일', '2027-12-25': '성탄절'
+      };
+
+      function getHolidayName(year, month, day) {
+        const mStr = String(month + 1).padStart(2, '0');
+        const dStr = String(day).padStart(2, '0');
+        const key = `${year}-${mStr}-${dStr}`;
+        if (HOLIDAYS[key]) return HOLIDAYS[key];
+        const fixed = {
+          '01-01': '신정', '03-01': '삼일절', '05-05': '어린이날', '06-06': '현충일',
+          '08-15': '광복절', '10-03': '개천절', '10-09': '한글날', '12-25': '성탄절'
+        };
+        return fixed[`${mStr}-${dStr}`] || null;
+      }
 
       const SWAP_COLORS = [
         { bg: '#cfe2f3', border: '#0b5394' }, 
@@ -214,12 +276,115 @@
           teacherChecks.appendChild(item);
         });
         teacherSelect.addEventListener('change', renderSelectedTeacherSchedule);
+        renderLunchCalendar();
       }
 
       function showLoadError(error) {
         document.getElementById('scheduleGuide').textContent = '시간표 정보를 불러오지 못했습니다. 새로고침을 시도해주세요.';
       }
 
+      // 급식지도 달력 렌더링
+      function renderLunchCalendar() {
+        if (!window.appData) return;
+        
+        let dateMap = {};
+        if (window.appData.lunchData) {
+          for (let teacher in window.appData.lunchData) {
+            window.appData.lunchData[teacher].forEach(dateStr => {
+              if (!dateMap[dateStr]) dateMap[dateStr] = [];
+              dateMap[dateStr].push(teacher);
+            });
+          }
+        }
+
+        const year = currentLunchDate.getFullYear();
+        const month = currentLunchDate.getMonth();
+        document.getElementById('lunchMonthLabel').textContent = `${year}년 ${month + 1}월`;
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        let html = '<table class="table table-bordered text-center lunch-cal-table"><thead><tr>';
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        days.forEach((d, idx) => {
+          let colorClass = idx === 0 ? 'text-danger' : (idx === 6 ? 'text-primary' : '');
+          html += `<th class="bg-light ${colorClass}">${d}</th>`;
+        });
+        html += '</tr></thead><tbody><tr>';
+
+        let dayCount = 1;
+        for (let i = 0; i < firstDay; i++) {
+          html += '<td class="bg-light"></td>';
+        }
+        
+        let today = new Date();
+
+        for (let i = firstDay; i < 7; i++) {
+          html += buildLunchCell(year, month, dayCount, today, dateMap, i);
+          dayCount++;
+        }
+        html += '</tr>';
+
+        while (dayCount <= daysInMonth) {
+          html += '<tr>';
+          for (let i = 0; i < 7; i++) {
+            if (dayCount > daysInMonth) {
+              html += '<td class="bg-light"></td>';
+            } else {
+              html += buildLunchCell(year, month, dayCount, today, dateMap, i);
+              dayCount++;
+            }
+          }
+          html += '</tr>';
+        }
+        html += '</tbody></table>';
+        document.getElementById('lunchCalendarContainer').innerHTML = html;
+      }
+
+      function buildLunchCell(year, month, dayCount, today, dateMap, dayOfWeek) {
+        let dateKey = `${month + 1}/${dayCount}`;
+        let teachers = dateMap[dateKey] ? dateMap[dateKey].join(', ') : '';
+        
+        let isToday = (today.getFullYear() === year && today.getMonth() === month && today.getDate() === dayCount);
+        let cellClass = isToday ? 'lunch-today' : '';
+        
+        let holidayName = getHolidayName(year, month, dayCount);
+        let isSunday = (dayOfWeek === 0);
+        let isSaturday = (dayOfWeek === 6);
+
+        // 공휴일 및 일요일 붉은색 처리
+        let dateColorClass = (holidayName || isSunday) ? 'text-danger' : (isSaturday ? 'text-primary' : '');
+
+        let teacherHtml = '';
+        if (teachers) {
+          // 오늘 날짜인 경우 교사명 아래에 급식지도 시간 명시
+          let timeHtml = isToday ? '<div class="text-danger fw-bold" style="font-size:0.72rem; margin-top:3px; background:#fff2f2; border-radius:4px; padding:1px 0;">12:40~13:20</div>' : '';
+          teacherHtml = `<div class="lunch-teacher mt-1">${escapeHtml(teachers)}${timeHtml}</div>`;
+        }
+
+        let holidayHtml = holidayName ? `<div class="text-danger fw-bold" style="font-size:0.68rem; line-height:1.1; margin-top:2px;">${escapeHtml(holidayName)}</div>` : '';
+        let todayBadge = isToday ? '<span class="badge bg-primary ms-1" style="font-size:0.62rem; padding: 2px 4px;">오늘</span>' : '';
+
+        return `<td class="${cellClass}">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span class="lunch-date ${dateColorClass}">${dayCount}</span>
+                    ${todayBadge}
+                  </div>
+                  ${holidayHtml}
+                  ${teacherHtml}
+                </td>`;
+      }
+
+      function changeLunchMonth(delta) {
+        if (delta === 0) {
+          currentLunchDate = new Date();
+        } else {
+          currentLunchDate.setMonth(currentLunchDate.getMonth() + delta);
+        }
+        renderLunchCalendar();
+      }
+
+      // 교사 시간표 렌더링
       function changeWeek(delta) {
         if (delta === 0) window.weekOffset = 0; else window.weekOffset += delta; 
         renderSelectedTeacherSchedule(); 
@@ -290,6 +455,25 @@
           });
           row += '</tr>';
           tbody += row;
+          
+          if (p === 4) {
+            let lunchRow = '<tr><td class="period-cell" style="background-color:#fff3cd; color:#856404; font-size:0.85rem;">점심<br><span class="time-text">12:40~13:20</span></td>';
+            WEEKDAYS.forEach(function (day, dayIdx) {
+              let tdStyle = dayIdx > 0 ? 'border-left: 2px solid #dee2e6;' : '';
+              let tDate = weekDates[dayIdx];
+              let dateKey = (tDate.getMonth() + 1) + '/' + tDate.getDate();
+              
+              let isSupervising = window.appData.lunchData && window.appData.lunchData[teacher.name] && window.appData.lunchData[teacher.name].includes(dateKey);
+
+              if (isSupervising) {
+                lunchRow += `<td style="${tdStyle} background-color:#ffdf7e; color:#856404; font-weight:bold; font-size:0.95rem;">급식지도</td>`;
+              } else {
+                lunchRow += `<td class="free-slot" style="${tdStyle} font-size:0.85rem; color:#adb5bd;">점심 시간</td>`;
+              }
+            });
+            lunchRow += '</tr>';
+            tbody += lunchRow;
+          }
         }
         tbody += '</tbody>';
 
