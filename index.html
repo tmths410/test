@@ -575,6 +575,7 @@
       const contents=document.createElement('div');
       contents.textContent='생활지도 사항: '+(record.contents || (success && action==='delete'?'기록 없음(빈 열·월 정리)':'—'));
       const status=document.createElement('div');status.textContent=message || '';
+      entry.historyStatus=status;
       entry.append(header,target,contents,status);
       if(success && action==='insert' && record.contents){
         const button=document.createElement('button');
@@ -588,7 +589,8 @@
       document.getElementById('inputHistoryStatus').textContent=(action==='delete'?'입력 취소':'입력')+' '+(success?'완료':'실패')+'. '+(message||'');
     }
     async function cancelHistoryEntry(record,entry) {
-      if(inputRequestBusy)return;
+      if(inputRequestBusy || entry.cancelled)return;
+      if(!confirm([record.date+' '+record.period,record.grade+'학년 '+record.classNum+'반 '+(record.name || '')+' ('+record.num+'번)',record.contents,'이 입력 내역을 취소(삭제)하시겠습니까?'].join('\n')))return;
       inputRequestBusy=true;
       const controls=[...document.querySelectorAll('#viewInput input, #viewInput select, #viewInput button')].map(el=>({el:el,disabled:el.disabled}));
       controls.forEach(({el})=>el.disabled=true);
@@ -600,13 +602,16 @@
         const res=await callApi('submitViolation',{payload:{action:'deleteItems',date:record.date,grade:record.grade,classNum:record.classNum,num:record.num,period:record.period,items:items,targetSheet:targetSheet}});
         appendInputHistory('delete',res && res.record || record,Boolean(res && res.success),res && res.message || '서버 응답을 확인하지 못했습니다.');
         if(res && res.success){
-          entry.remove();
+          entry.cancelled=true;
+          entry.historyStatus.textContent='취소 완료 · '+(res.message || '해당 입력을 취소했습니다.');
+          const button=entry.querySelector('button');
+          if(button){button.textContent='취소 완료';button.cancelled=true;button.disabled=true;button.style.background='#64748b';}
           loadedResultData=null;loadedGradeResultData=null;
           if(res.monthDeleted){if(currentMonth===targetSheet)currentMonth='';if(currentGradeMonth===targetSheet)currentGradeMonth='';}
         }
       } catch(err){appendInputHistory('delete',record,false,'통신 중 오류가 발생했습니다. 조회 결과를 확인한 뒤 다시 시도해주세요.');}
       finally {
-        controls.forEach(({el,disabled})=>el.disabled=disabled);
+        controls.forEach(({el,disabled})=>el.disabled=Boolean(el.cancelled || disabled));
         document.getElementById('loader').style.display='none';inputRequestBusy=false;
       }
     }
@@ -621,6 +626,7 @@
       if(!dateRaw)return fail('날짜를 선택해주세요.');
       if(!grade || !classNum || !num)return fail('학년, 반, 학생을 정확히 선택해주세요.');
       if(!period)return fail('교시를 선택해주세요.');
+      if(actionType==='delete' && !confirm([dateRaw+' '+period,grade+'학년 '+classNum+'반 '+(record.name || '')+' ('+num+'번)','해당 학생의 이 날짜·교시 기록 전체를 취소(삭제)하시겠습니까?'].join('\n')))return;
       const d=new Date(dateRaw+'T12:00:00');
       const payload={action:actionType,date:dateRaw,grade:grade,classNum:classNum,num:num,period:period,targetSheet:d.getFullYear()+'. '+String(d.getMonth()+1).padStart(2,'0')+'.'};
       if(actionType==='insert'){
