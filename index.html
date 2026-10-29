@@ -562,7 +562,11 @@
     }
 
     let inputRequestBusy=false;
+    function inputHistoryMessage(action,success,message) {
+      return success ? (action==='delete' ? '취소 완료' : '입력 완료') : (message || '처리하지 못했습니다.');
+    }
     function appendInputHistory(action,record,success,message) {
+      message=inputHistoryMessage(action,success,message);
       const list=document.getElementById('inputHistoryList');
       document.getElementById('inputHistoryEmpty').hidden=true;
       const entry=document.createElement('li');
@@ -587,7 +591,7 @@
         header.append(button);
       }
       list.prepend(entry);
-      document.getElementById('inputHistoryStatus').textContent=(action==='delete'?'입력 취소':'입력')+' '+(success?'완료':'실패')+'. '+(message||'');
+      document.getElementById('inputHistoryStatus').textContent=success ? message : (action==='delete'?'취소 실패: ':'입력 실패: ')+message;
     }
     async function cancelHistoryEntry(record,entry) {
       if(inputRequestBusy || entry.cancelled)return;
@@ -603,9 +607,9 @@
         const res=await callApi('submitViolation',{payload:{action:'deleteItems',date:record.date,grade:record.grade,classNum:record.classNum,num:record.num,period:record.period,items:items,targetSheet:targetSheet}});
         if(res && res.success){
           entry.cancelled=true;
-          entry.historyStatus.textContent='취소 완료 · '+(res.message || '해당 입력을 취소했습니다.');
+          entry.historyStatus.textContent='취소 완료';
           entry.historyTime.textContent+=' · 취소 시간: '+new Date().toLocaleString('ko-KR',{hour12:false});
-          document.getElementById('inputHistoryStatus').textContent='입력 취소 완료. '+(res.message || '');
+          document.getElementById('inputHistoryStatus').textContent='취소 완료';
           const button=entry.querySelector('button');
           if(button){button.textContent='취소 완료';button.cancelled=true;button.disabled=true;button.style.background='#64748b';}
           loadedResultData=null;loadedGradeResultData=null;
