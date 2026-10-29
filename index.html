@@ -126,7 +126,7 @@
       <div class="input-row student-row">
         <div><label for="grade">학년</label><select id="grade" onchange="updateClassDropdown()" disabled><option value="">불러오는 중...</option></select></div>
         <div><label for="classNum">반</label><select id="classNum" onchange="updateStudentDropdown()" disabled><option value="">선택</option></select></div>
-        <div><label for="student">학생 이름 (번호)</label><select id="student" disabled><option value="">선택</option></select></div>
+        <div><label for="student">학생 이름</label><select id="student" disabled><option value="">선택</option></select></div>
       </div>
 
       <div class="form-group">
@@ -530,7 +530,7 @@
 
       if (selectedGrade && selectedClass) {
         const students = globalData.students.filter(s => s.grade == selectedGrade && s.classNum == selectedClass).sort((a,b) => a.num - b.num);
-        students.forEach(s => studentSelect.innerHTML += `<option value="${s.num}">${escapeHtml(s.name)} (${s.num}번)</option>`);
+        students.forEach(s => studentSelect.innerHTML += `<option value="${s.num}">${s.num}번 ${escapeHtml(s.name)}</option>`);
         studentSelect.disabled = false;
       } else {
         studentSelect.disabled = true;
