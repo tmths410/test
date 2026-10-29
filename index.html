@@ -141,6 +141,13 @@
       </div>
       
       <div id="loader" class="loader">구글 시트로 전송 중입니다... ⏳</div>
+      <section aria-labelledby="inputHistoryHeading" style="margin-top:24px;border-top:1px solid #cbd5e1;padding-top:14px">
+        <h3 id="inputHistoryHeading">입력·취소 내역</h3>
+        <p style="font-size:13px;color:#64748b">현재 화면에서 처리한 내역을 최신순으로 표시합니다. 새로고침하면 표시 내역은 초기화됩니다.</p>
+        <p id="inputHistoryEmpty">아직 처리한 내역이 없습니다.</p>
+        <p id="inputHistoryStatus" role="status" aria-live="polite"></p>
+        <ol id="inputHistoryList" style="list-style:none;padding:0;max-height:480px;overflow-y:auto"></ol>
+      </section>
     </div>
 
     <!-- VIEW 2: 담임용 결과 확인 -->
@@ -554,74 +561,60 @@
       if (!isEtcChecked) etcField.value = "";
     }
 
+    let inputRequestBusy=false;
+    function appendInputHistory(action,record,success,message) {
+      const list=document.getElementById('inputHistoryList');
+      document.getElementById('inputHistoryEmpty').hidden=true;
+      const entry=document.createElement('li');
+      entry.style.cssText='padding:12px;margin:8px 0;border:1px solid #cbd5e1;border-left:4px solid '+(success?(action==='delete'?'#dc2626':'#16a34a'):'#d97706')+';border-radius:4px;background:#fff;overflow-wrap:anywhere';
+      const heading=document.createElement('strong');
+      heading.textContent=new Date().toLocaleTimeString('ko-KR',{hour12:false})+' · '+(action==='delete'?'입력 취소(삭제)':'입력')+' · '+(success?'완료':'실패');
+      const target=document.createElement('div');
+      target.textContent=[record.date,record.period,record.grade?record.grade+'학년':'',record.classNum?record.classNum+'반':'',record.name || '',record.num?'('+record.num+'번)':''].filter(Boolean).join(' ');
+      const contents=document.createElement('div');
+      contents.textContent='생활지도 사항: '+(record.contents || (success && action==='delete'?'기록 없음(빈 열·월 정리)':'—'));
+      const status=document.createElement('div');status.textContent=message || '';
+      entry.append(heading,target,contents,status);list.prepend(entry);
+      document.getElementById('inputHistoryStatus').textContent=(action==='delete'?'입력 취소':'입력')+' '+(success?'완료':'실패')+'. '+(message||'');
+    }
     async function submitAction(actionType) {
-      const dateRaw = document.getElementById("dateInput").value;
-      const grade = document.getElementById("grade").value;
-      const classNum = document.getElementById("classNum").value;
-      const num = document.getElementById("student").value;
-      const period = document.getElementById("period").value;
-      
-      if (!dateRaw) return alert("날짜를 선택해주세요.");
-      if (!grade || !classNum || !num) return alert("학년, 반, 학생을 정확히 선택해주세요.");
-
-      if (!period) return alert('교시를 선택해주세요.');
-      const d = new Date(dateRaw + 'T12:00:00');
-      const payload = {
-        action: actionType,
-        grade: grade,
-        classNum: classNum,
-        num: num,
-        period: period,
-        date: dateRaw,
-        targetSheet: d.getFullYear() + '. ' + ('0' + (d.getMonth() + 1)).slice(-2) + '.'
-      }; 
-
-      if (actionType === 'insert') {
-        const checkboxes = document.getElementsByName('violationCheckbox');
-        let selectedViolations = [];
-        let hasEtc = false;
-        
-        for(let i = 0; i < checkboxes.length; i++) {
-          if(checkboxes[i].checked) {
-            let val = checkboxes[i].value;
-            if(val.includes("기타")) hasEtc = true;
-            selectedViolations.push(val);
-          }
-        }
-        const etcDetail = document.getElementById("etcField").value;
-
-        if (selectedViolations.length === 0) return alert("위반 사항을 1개 이상 선택해주세요.");
-        if (hasEtc && !etcDetail.trim()) return alert("기타 상세 사유를 입력해주세요.");
-
-        if(hasEtc) {
-          for(let i = 0; i < selectedViolations.length; i++) {
-            if(selectedViolations[i].includes("기타")) selectedViolations[i] = `기타(${etcDetail.trim()})`;
-          }
-        }
-        payload.violation = selectedViolations.join(", ");
-      } 
-      else if (actionType === 'delete') {
-        if (!confirm(`해당 학생의 [${period}] 기록을 완전히 삭제하시겠습니까?`)) return;
+      if(inputRequestBusy)return;
+      const dateRaw=document.getElementById('dateInput').value;
+      const grade=document.getElementById('grade').value,classNum=document.getElementById('classNum').value,num=document.getElementById('student').value,period=document.getElementById('period').value;
+      const student=globalData.students.find(s=>String(s.grade)===grade && String(s.classNum)===classNum && String(s.num)===num);
+      const record={date:dateRaw,grade:grade,classNum:classNum,num:num,name:student?student.name:'',period:period,contents:''};
+      const fail=message=>appendInputHistory(actionType,record,false,message);
+      if(!['insert','delete'].includes(actionType))return fail('처리할 작업을 확인해주세요.');
+      if(!dateRaw)return fail('날짜를 선택해주세요.');
+      if(!grade || !classNum || !num)return fail('학년, 반, 학생을 정확히 선택해주세요.');
+      if(!period)return fail('교시를 선택해주세요.');
+      const d=new Date(dateRaw+'T12:00:00');
+      const payload={action:actionType,date:dateRaw,grade:grade,classNum:classNum,num:num,period:period,targetSheet:d.getFullYear()+'. '+String(d.getMonth()+1).padStart(2,'0')+'.'};
+      if(actionType==='insert'){
+        let selected=[...document.getElementsByName('violationCheckbox')].filter(cb=>cb.checked).map(cb=>cb.value);
+        if(!selected.length)return fail('생활지도 사항을 1개 이상 선택해주세요.');
+        const detail=document.getElementById('etcField').value.trim();
+        if(selected.some(v=>v.includes('기타')) && !detail)return fail('기타 상세 사유를 입력해주세요.');
+        selected=selected.map(v=>v.includes('기타')?'기타('+detail+')':v);
+        payload.violation=selected.join(', ');record.contents=payload.violation;
       }
-
-      document.getElementById("loader").style.display = "block";
-
-      const res = await callApi("submitViolation", { payload: payload });
-      document.getElementById("loader").style.display = "none";
-
-      if(res.success) {
-        alert(res.message || "성공적으로 처리되었습니다.");
-        
-        loadedResultData = null; 
-        loadedGradeResultData = null;
-        
-        const checkboxes = document.getElementsByName('violationCheckbox');
-        for(let i = 0; i < checkboxes.length; i++) checkboxes[i].checked = false;
-        toggleEtcField();
-        document.getElementById("student").value = "";
-        document.getElementById("period").value = "";
-      } else {
-        alert("처리 실패: " + res.message);
+      inputRequestBusy=true;
+      const controls=[...document.querySelectorAll('#viewInput input, #viewInput select, #viewInput button')].map(el=>({el:el,disabled:el.disabled}));
+      controls.forEach(({el})=>el.disabled=true);
+      document.getElementById('loader').style.display='block';
+      try {
+        const res=await callApi('submitViolation',{payload:payload});
+        appendInputHistory(actionType,res && res.record || record,Boolean(res && res.success),res && res.message || '서버 응답을 확인하지 못했습니다.');
+        if(res && res.success){
+          loadedResultData=null;loadedGradeResultData=null;
+          if(res.monthDeleted){if(currentMonth===payload.targetSheet)currentMonth='';if(currentGradeMonth===payload.targetSheet)currentGradeMonth='';}
+          for(const cb of document.getElementsByName('violationCheckbox'))cb.checked=false;
+          toggleEtcField();document.getElementById('student').value='';document.getElementById('period').value='';
+        }
+      } catch(err){fail('통신 중 오류가 발생했습니다. 조회 결과를 확인한 뒤 다시 시도해주세요.');}
+      finally {
+        controls.forEach(({el,disabled})=>el.disabled=disabled);
+        document.getElementById('loader').style.display='none';inputRequestBusy=false;
       }
     }
 
