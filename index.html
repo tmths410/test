@@ -569,13 +569,46 @@
       entry.style.cssText='padding:12px;margin:8px 0;border:1px solid #cbd5e1;border-left:4px solid '+(success?(action==='delete'?'#dc2626':'#16a34a'):'#d97706')+';border-radius:4px;background:#fff;overflow-wrap:anywhere';
       const heading=document.createElement('strong');
       heading.textContent=new Date().toLocaleTimeString('ko-KR',{hour12:false})+' · '+(action==='delete'?'입력 취소(삭제)':'입력')+' · '+(success?'완료':'실패');
+      const header=document.createElement('div');header.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap';header.append(heading);
       const target=document.createElement('div');
       target.textContent=[record.date,record.period,record.grade?record.grade+'학년':'',record.classNum?record.classNum+'반':'',record.name || '',record.num?'('+record.num+'번)':''].filter(Boolean).join(' ');
       const contents=document.createElement('div');
       contents.textContent='생활지도 사항: '+(record.contents || (success && action==='delete'?'기록 없음(빈 열·월 정리)':'—'));
       const status=document.createElement('div');status.textContent=message || '';
-      entry.append(heading,target,contents,status);list.prepend(entry);
+      entry.append(header,target,contents,status);
+      if(success && action==='insert' && record.contents){
+        const button=document.createElement('button');
+        button.type='button';button.textContent='입력 취소(삭제)';
+        button.style.cssText='margin:6px 0;padding:7px 10px;border:0;border-radius:4px;background:#dc2626;color:white;cursor:pointer';
+        button.setAttribute('aria-label',(record.name || '학생')+' '+record.date+' '+record.period+' 입력 취소(삭제)');
+        button.onclick=()=>cancelHistoryEntry(record,entry);
+        header.append(button);
+      }
+      list.prepend(entry);
       document.getElementById('inputHistoryStatus').textContent=(action==='delete'?'입력 취소':'입력')+' '+(success?'완료':'실패')+'. '+(message||'');
+    }
+    async function cancelHistoryEntry(record,entry) {
+      if(inputRequestBusy)return;
+      inputRequestBusy=true;
+      const controls=[...document.querySelectorAll('#viewInput input, #viewInput select, #viewInput button')].map(el=>({el:el,disabled:el.disabled}));
+      controls.forEach(({el})=>el.disabled=true);
+      document.getElementById('loader').style.display='block';
+      const date=new Date(record.date+'T12:00:00');
+      const targetSheet=date.getFullYear()+'. '+String(date.getMonth()+1).padStart(2,'0')+'.';
+      const items=Array.isArray(record.items) ? [...record.items] : record.contents.split(',').map(v=>v.trim()).filter(Boolean);
+      try {
+        const res=await callApi('submitViolation',{payload:{action:'deleteItems',date:record.date,grade:record.grade,classNum:record.classNum,num:record.num,period:record.period,items:items,targetSheet:targetSheet}});
+        appendInputHistory('delete',res && res.record || record,Boolean(res && res.success),res && res.message || '서버 응답을 확인하지 못했습니다.');
+        if(res && res.success){
+          entry.remove();
+          loadedResultData=null;loadedGradeResultData=null;
+          if(res.monthDeleted){if(currentMonth===targetSheet)currentMonth='';if(currentGradeMonth===targetSheet)currentGradeMonth='';}
+        }
+      } catch(err){appendInputHistory('delete',record,false,'통신 중 오류가 발생했습니다. 조회 결과를 확인한 뒤 다시 시도해주세요.');}
+      finally {
+        controls.forEach(({el,disabled})=>el.disabled=disabled);
+        document.getElementById('loader').style.display='none';inputRequestBusy=false;
+      }
     }
     async function submitAction(actionType) {
       if(inputRequestBusy)return;
