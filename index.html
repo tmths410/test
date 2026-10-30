@@ -104,7 +104,7 @@
   <div class="header">
     <h1>학생 생활지도 관리 시스템</h1>
     <div class="nav-btn-group">
-      <button id="btnNavInput" class="nav-btn nav-btn-main active" onclick="switchView('input')">✏️ 생활지도 사항 입력</button>
+      <button id="btnNavInput" style="display:none;" class="nav-btn nav-btn-main active" onclick="switchView('input')">✏️ 생활지도 사항 입력</button>
       <button id="btnNavResult" style="display:none;" class="nav-btn nav-btn-main" onclick="switchView('result')">📋 담임용 결과 확인</button>
       <button id="btnNavGradeResult" class="nav-btn nav-btn-main" style="display:none;" onclick="switchView('gradeResult')">📊 학년별 결과 확인</button>
       <button id="btnNavSettings" class="nav-btn nav-btn-main" style="display:none" onclick="switchView('settings')">⚙️ 항목·교시 관리</button>
@@ -115,8 +115,9 @@
 
   <div class="container">
     
+    <div id="loginRequired" class="card"><p id="loginRequiredMessage" role="status">Google 계정으로 로그인하면 생활지도 사항을 입력할 수 있습니다.</p></div>
     <!-- VIEW 1: 생활지도 사항 입력 -->
-    <div id="viewInput" class="card">
+    <div id="viewInput" class="card" style="display:none;">
             
       <div class="input-row date-row">
         <div><label for="dateInput">날짜</label><input type="date" id="dateInput" required></div>
@@ -471,8 +472,10 @@
     }
 
     async function initData() {
+      if(!googleIdToken){resetResultAccess();return;}
+      document.getElementById('loginRequiredMessage').textContent='로그인 상태를 확인하는 중입니다...';
       const requestToken = googleIdToken;
-      const data = await callApi("getInitialData");
+      const data = await callApi("getInitialData",{includeStudents:cachedStudentRoster===null});
       if (requestToken !== googleIdToken) return;
       if (data && data.students) {
         onInitialDataLoaded(data);
@@ -483,7 +486,12 @@
     }
 
     function onInitialDataLoaded(data) {
+      if(data.authenticated){
+        if(data.studentsIncluded===false && cachedStudentRoster!==null)data.students=cachedStudentRoster;
+        else cachedStudentRoster=data.students;
+      }
       globalData = data;
+      if(!applyAuthenticatedInput_(data))return;
       document.getElementById('dataLoader').style.display = 'none';
       
       if (data.spreadsheetUrl) {
@@ -497,6 +505,29 @@
       setupTeacherInfo(data.teacherInfo);
     }
 
+    let inputAuthenticated=false;
+    let cachedStudentRoster=null;
+    function updateClassDropdown() {if(inputAuthenticated && !inputRequestBusy)renderClassDropdown_();}
+    function updateStudentDropdown() {if(inputAuthenticated && !inputRequestBusy)renderStudentDropdown_();}
+    function applyAuthenticatedInput_(data) {
+      const email=data && data.teacherInfo && data.teacherInfo.userEmail;
+      const loggedIn=Boolean(googleIdToken && data && data.authenticated && email);
+      const hasOtherMenu=data && data.teacherInfo && ['canViewClassResult','canViewGradeResult','canManagePermissions','canManageSettings'].some(flag=>data.teacherInfo[flag]===true);
+      inputAuthenticated=Boolean(loggedIn && hasOtherMenu && data.inputAllowed!==false);
+      if(!inputAuthenticated){
+        if(loggedIn){userEmail=email;localStorage.setItem('google_user_email',userEmail);}
+        resetResultAccess();
+        if(loggedIn){updateAuthUI();document.getElementById('loginRequiredMessage').textContent='사용 가능한 메뉴 권한이 없습니다. 권한 관리 담당자에게 문의해주세요.';}
+        return false;
+      }
+      userEmail=email;localStorage.setItem('google_user_email',userEmail);
+      document.getElementById('loginRequired').style.display='none';
+      document.getElementById('btnNavInput').style.display='inline-block';
+      const otherVisible=['viewResult','viewGradeResult','viewPermission','viewSettings'].some(id=>document.getElementById(id).style.display!=='none');
+      if(!otherVisible)document.getElementById('viewInput').style.display='block';
+      updateAuthUI();return true;
+    }
+
     function populateGrades() {
       const gradeSelect = document.getElementById('grade');
       const grades = [...new Set(globalData.students.map(s => s.grade))].sort((a,b) => a - b);
@@ -505,7 +536,7 @@
       gradeSelect.disabled = false;
     }
 
-    function updateClassDropdown() {
+    function renderClassDropdown_() {
       const selectedGrade = document.getElementById('grade').value;
       const classSelect = document.getElementById('classNum');
       const studentSelect = document.getElementById('student');
@@ -522,7 +553,7 @@
       }
     }
 
-    function updateStudentDropdown() {
+    function renderStudentDropdown_() {
       const selectedGrade = document.getElementById('grade').value;
       const selectedClass = document.getElementById('classNum').value;
       const studentSelect = document.getElementById('student');
@@ -602,7 +633,7 @@
       document.getElementById('inputHistoryStatus').textContent=success ? message : (action==='delete'?'취소 실패: ':'입력 실패: ')+message;
     }
     async function cancelHistoryEntry(record,entry) {
-      if(inputRequestBusy || entry.cancelled)return;
+      if(!inputAuthenticated || inputRequestBusy || entry.cancelled)return;
       if(!confirm([record.date+' '+record.period,record.grade+'학년 '+record.classNum+'반 '+(record.name || '')+' ('+record.num+'번)',record.contents,'이 입력 내역을 취소(삭제)하시겠습니까?'].join('\n')))return;
       inputRequestBusy=true;
       const controls=[...document.querySelectorAll('#viewInput input, #viewInput select, #viewInput button')].map(el=>({el:el,disabled:el.disabled}));
@@ -633,7 +664,7 @@
       }
     }
     async function submitAction(actionType) {
-      if(inputRequestBusy)return;
+      if(!inputAuthenticated || inputRequestBusy)return;
       const dateRaw=document.getElementById('dateInput').value;
       const grade=document.getElementById('grade').value,classNum=document.getElementById('classNum').value,num=document.getElementById('student').value,period=document.getElementById('period').value;
       const student=globalData.students.find(s=>String(s.grade)===grade && String(s.classNum)===classNum && String(s.num)===num);
@@ -679,12 +710,20 @@
       return Boolean(googleIdToken && userEmail && info && info.userEmail && info.userEmail.toLowerCase() === userEmail.toLowerCase() && info.canViewClassResult);
     }
     function resetResultAccess() {
+      inputAuthenticated=false;cachedStudentRoster=null;
+      globalData.students=[];
+      document.getElementById('btnNavInput').style.display='none';
+      document.getElementById('loginRequired').style.display='block';
+      document.getElementById('loginRequiredMessage').textContent='Google 계정으로 로그인하면 생활지도 사항을 입력할 수 있습니다.';
+      document.getElementById('inputHistoryList').replaceChildren();
+      document.getElementById('inputHistoryEmpty').hidden=false;
+      document.getElementById('inputHistoryStatus').textContent='';
       globalData.teacherInfo = null;
       loadedResultData = null; loadedGradeResultData = null;
       ['btnNavResult','btnNavGradeResult','btnNavPermission','btnNavSettings','sheetLink'].forEach(id => document.getElementById(id).style.display = 'none');
       ['viewResult','viewGradeResult','viewPermission','viewSettings'].forEach(id => document.getElementById(id).style.display = 'none');
       ['tableContent','gradeTableContent','permissionTableContainer'].forEach(id => {const el=document.getElementById(id);if(el)el.replaceChildren();});
-      document.getElementById('viewInput').style.display = 'block';
+      document.getElementById('viewInput').style.display = 'none';
     }
     function setupTeacherInfo(info) {
       refreshMenuVisibility();
@@ -712,6 +751,7 @@
     }
 
     function switchView(viewName) {
+      if(!inputAuthenticated){resetResultAccess();return;}
       const required={gradeResult:'canViewGradeResult',permission:'canManagePermissions',settings:'canManageSettings'};
       if(required[viewName] && !hasMenuPermission(required[viewName]))return alert('이 메뉴의 사용 권한이 없습니다.');
       if (viewName === 'result' && !canViewClassResult()) return alert('조회 권한이 있는 Google 계정으로 로그인해주세요.');
